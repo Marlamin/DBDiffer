@@ -56,9 +56,14 @@ namespace DBDiffer.DiffResults
             return JsonConvert.SerializeObject(result, formatting, _converter);
         }
 
-        public string ToJSONString(int draw, int skip, int take, Formatting formatting = Formatting.None)
+        public string ToJSONString(int draw, int skip, int take, DiffOperation opFilter = DiffOperation.Unknown, Formatting formatting = Formatting.None)
         {
-            var eles = this.Skip(Math.Max(skip, 0)).Take(take <= 0 ? Count : take);
+            var elements = this._results;
+
+            if(opFilter != DiffOperation.Unknown)
+                elements = elements.Where(x => x.Operation == opFilter).ToList();
+
+            var eles = elements.Skip(Math.Max(skip, 0)).Take(take <= 0 ? Count : take);
             var result = new { draw = draw, data = eles, recordsTotal = this.Count, recordsFiltered = this.Count };
 
             return JsonConvert.SerializeObject(result, formatting, _converter);
