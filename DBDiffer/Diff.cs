@@ -1,5 +1,4 @@
-﻿using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
+﻿using System.Text.Json.Serialization;
 
 namespace DBDiffer
 {
@@ -13,19 +12,38 @@ namespace DBDiffer
             PreviousValue = prevvalue;
         }
 
-        [JsonProperty("op")]
-        [JsonConverter(typeof(StringEnumConverter))]
+        [JsonPropertyName("op")]
+        [JsonConverter(typeof(JsonStringEnumConverter))]
         public DiffOperation Operation { get; set; }
 
-        [JsonProperty("property")]
+        [JsonPropertyName("property")]
         public string Property { get; private set; }
 
-        [JsonProperty("currentvalue")]
+        [JsonPropertyName("currentvalue")]
         public object CurrentValue { get; set; }
 
-        [JsonProperty("previousvalue")]
+        [JsonPropertyName("previousvalue")]
         public object PreviousValue { get; set; }
 
         public override string ToString() => $"{Operation} {Property} {CurrentValue} {PreviousValue}";
+    }
+
+    internal static class JsonSerialization
+    {
+        public static System.Text.Json.JsonSerializerOptions CreateOptions(bool indented = false, System.Text.Json.Serialization.JsonConverter converter = null)
+        {
+            var options = new System.Text.Json.JsonSerializerOptions
+            {
+                WriteIndented = indented,
+                IncludeFields = true,
+                Converters = { new JsonStringEnumConverter() },
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+
+            };
+            options.Converters.Add(new JsonStringEnumConverter());
+            if (converter != null)
+                options.Converters.Add(converter);
+            return options;
+        }
     }
 }

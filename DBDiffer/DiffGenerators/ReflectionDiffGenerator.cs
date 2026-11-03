@@ -3,10 +3,8 @@ using System.Collections.Generic;
 
 namespace DBDiffer.DiffGenerators
 {
-    internal class ReflectionDiffGenerator : IDiffGenerator
+    internal class ReflectionDiffGenerator
     {
-        public bool HasMatchingFields => _fieldMap.AddedFields.Length + _fieldMap.RemovedFields.Length == 0;
-
         private readonly FieldMap _fieldMap;
         private readonly DBInfo _prevDB;
         private readonly DBInfo _curDB;

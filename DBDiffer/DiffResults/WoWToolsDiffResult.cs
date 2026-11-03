@@ -3,23 +3,18 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using DBDiffer.Helpers.Attributes;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using DBDiffer.Helpers.Converters;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
 
 namespace DBDiffer.DiffResults
 {
-    [DiffType(DiffType.WoWTools)]
-    public sealed class WoWToolsDiffResult : IDiffResult, IReadOnlyCollection<WoWToolsDiff>
+    public sealed class WoWToolsDiffResult : IReadOnlyCollection<WoWToolsDiff>
     {
         private readonly List<WoWToolsDiff> _results;
-        private readonly WoWToolsConverter _converter;
 
         internal WoWToolsDiffResult(DBInfo PreviousDB, DBInfo CurrentDB, IDictionary<int, List<Diff>> diffs)
         {
-            _converter = new WoWToolsConverter();
-
             var intersection = PreviousDB.Keys.Intersect(CurrentDB.Keys);
 
             var added = CurrentDB.Keys.Except(intersection).Select(x => new WoWToolsDiff
@@ -44,29 +39,29 @@ namespace DBDiffer.DiffResults
             _results = added.Concat(removed).Concat(modified).ToList();
         }
 
-        public void Save(string path, Formatting formatting = Formatting.None)
+        public void Save(string path, bool indented = false)
         {
             using (var fs = File.CreateText(path))
-                fs.Write(JsonConvert.SerializeObject(this, formatting, _converter));
+                fs.Write(JsonSerializer.Serialize(this, JsonSerialization.CreateOptions(indented, new WoWToolsConverter())));
         }
 
-        public string ToJSONString(Formatting formatting = Formatting.None)
+        public string ToJSONString(bool indented = false)
         {
             var result = new { data = this };
-            return JsonConvert.SerializeObject(result, formatting, _converter);
+            return JsonSerializer.Serialize(result, JsonSerialization.CreateOptions(indented, new WoWToolsConverter()));
         }
 
-        public string ToJSONString(int draw, int skip, int take, DiffOperation opFilter = DiffOperation.Unknown, Formatting formatting = Formatting.None)
+        public string ToJSONString(int draw, int skip, int take, DiffOperation opFilter = DiffOperation.Unknown, bool indented = false)
         {
             var elements = this._results;
 
-            if(opFilter != DiffOperation.Unknown)
+            if (opFilter != DiffOperation.Unknown)
                 elements = elements.Where(x => x.Operation == opFilter).ToList();
 
             var eles = elements.Skip(Math.Max(skip, 0)).Take(take <= 0 ? Count : take);
             var result = new { draw = draw, data = eles, recordsTotal = this.Count, recordsFiltered = this.Count };
 
-            return JsonConvert.SerializeObject(result, formatting, _converter);
+            return JsonSerializer.Serialize(result, JsonSerialization.CreateOptions(indented, new WoWToolsConverter()));
         }
 
         #region Interface
@@ -83,12 +78,12 @@ namespace DBDiffer.DiffResults
 
     public sealed class WoWToolsDiff
     {
-        [JsonProperty("row")]
+        [JsonPropertyName("row")]
         public object Record { get; set; }
-        [JsonProperty("op")]
-        [JsonConverter(typeof(StringEnumConverter))]
+        [JsonPropertyName("op")]
+        [JsonConverter(typeof(JsonStringEnumConverter))]
         public DiffOperation Operation { get; set; }
-        [JsonProperty("diff")]
-        public List<Diff> Diffs { get; set; }
+        [JsonPropertyName("diff")]
+        public List<Diff> Diffs { get; set; } = [];
     }
 }
